@@ -18,7 +18,7 @@ args = parser.parse_args()
 # Define parameters
 mean_window = 120 # How many seconds to calculate means for filtering out noisy data
 mean_cushion = 7.5
-hmm_window = 60 # Used for reducing the number of states for HMM calculation
+hmm_window = 10 # Used for reducing the number of states for HMM calculation
 seconds_to_change = 60*30 # Used to determine expectation of transition from one state to another (i.e. how many manipulations occur)
 non_transition_bins = 2 # Parameter to prevent small changes in state
 std = 100 # Standard deviation of data
@@ -58,6 +58,7 @@ for i, column in enumerate(data): # Iterate through each column
 	# Calculate HMM
 	model = hmm.GaussianHMM(n_components=n_states, covariance_type="spherical")
 	model.startprob_ = np.array(n_states*[1/n_states])
+
 	change = 1/(seconds_to_change) # probability of transitioning states
 
 	# Create transition matrix
