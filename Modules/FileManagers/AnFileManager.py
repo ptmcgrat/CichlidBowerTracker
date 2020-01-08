@@ -63,7 +63,7 @@ class AnFileManager():
 		subprocess.run(['rclone', 'copy', self.localBoxesAnnotationFile, self.cloudBoxedFishesDir], stderr = subprocess.PIPE)
 		subprocess.run(['tar', '-cvf', self.localBoxedImagesDir + projectID + '.tar', '-C', self.localBoxedImagesDir, projectID], stderr = subprocess.PIPE)
 		subprocess.run(['rclone', 'copy', self.localBoxedImagesDir + projectID + '.tar', self.cloudBoxedImagesDir], stderr = subprocess.PIPE)
-		#subprocess.run(['rm', '-rf', self.localMasterDir], stderr = subprocess.PIPE)
+		subprocess.run(['rm', '-rf', self.localMasterDir], stderr = subprocess.PIPE)
 
 
 	def _createFileDirectoryNames(self):
