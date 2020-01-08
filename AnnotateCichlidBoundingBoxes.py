@@ -319,9 +319,7 @@ class ObjectLabeler():
 
 	def _previousFrame(self, event):
 		self.frame_index = self.annotated_frames.pop()
-		print(self.dt)
 		self.dt = self.dt[self.dt.Framefile != self.frames[self.frame_index]]
-		print(self.dt)
 		self._clearFrame(event)
 		# Load new image and save it as the background
 		img = plt.imread(self.frameDirectory + self.frames[self.frame_index])
