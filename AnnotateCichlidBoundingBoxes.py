@@ -347,34 +347,49 @@ obj = ObjectLabeler(projFileManager.localManualLabelFramesDir, projFileManager.l
 if not args.Practice:
 	# Backup annotations. Redownload to avoid race conditions
 	if not os.path.exists(projFileManager.localLabeledFramesFile):
-		pass
+		print(projFileManager.localLabeledFramesFile + 'does not exist. Did you annotate any new frames? Quitting...')
 	else:
-		# Backup to the project directory
-		new_DT = pd.read_csv(projFileManager.localLabeledFramesFile, index_col = 0)
-		subprocess.run(['mv', projFileManager.localLabeledFramesFile, projFileManager.localLabeledFramesFile + '.backup'], stderr = subprocess.PIPE)
-		subprocess.run(['rclone', 'copy', projFileManager.cloudLabeledFramesFile, projFileManager.localAnalysisDir], stderr = subprocess.PIPE)
+		# First read in the new annotations
+		newAnn_DT = pd.read_csv(projFileManager.localLabeledFramesFile, index_col = 0)
 
-		if os.path.exists(projFileManager.localLabeledFramesFile):
-			old_DT = pd.read_csv(projFileManager.localLabeledFramesFile, index_col = 0)
-			backup_DT = old_DT.append(new_DT, sort=True).drop_duplicates()
-		else:
-			backup_DT = new_DT
-		backup_DT.to_csv(projFileManager.localLabeledFramesFile, sep = ',', columns = ['Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
-		subprocess.run(['rclone', 'copy', projFileManager.localLabeledFramesFile, projFileManager.cloudAnalysisDir], stderr = subprocess.PIPE)
-
-		# Backup to the annotation direction
+		# Next download the annotations and frames already stored in the annotation database
 		anFileManager.downloadBoxedProject(args.ProjectID)
-		old_DT = pd.read_csv(anFileManager.localBoxesAnnotationFile)
-		backup_DT = old_DT.append(new_DT, sort=True).drop_duplicates()
-		backup_DT.to_csv(anFileManager.localBoxesAnnotationFile, sep = ',', columns = ['Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
-		
-		# Add videos
-		for row in old_DT.itertuples():
+
+		# Read in and merge new annotations into annotation csv file
+		if os.path.exists(anFileManager.localBoxesAnnotationFile):
+			old_DT = pd.read_csv(anFileManager.localBoxesAnnotationFile)
+			old_DT = old_DT.append(newAnn_DT, sort=True).drop_duplicates()
+		else:
+			print('Annotation database file does not exist yet. Creating')
+			old_DT = newAnn_DT
+
+		old_DT.to_csv(anFileManager.localBoxesAnnotationFile, sep = ',', columns = ['Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
+
+		# Add newly annotated frames to annotation database
+		for row in newAnn_DT.itertuples():
 			if not os.path.exists(anFileManager.localBoxedImagesProjDir + row.Framefile):
 				output = subprocess.run(['cp', projFileManager.localManualLabelFramesDir + row.Framefile, anFileManager.localBoxedImagesProjDir], stderr = subprocess.PIPE, encoding = 'utf-8')
 				if output.stderr != '':
 					print(output.stderr)
 					raise Exception
+
+		# Backup frames file and annotation file on annotation database
 		anFileManager.backupBoxedProject(args.ProjectID)
 
+		# Add the new annotations to the project annotation database
+		subprocess.run(['mv', projFileManager.localLabeledFramesFile, projFileManager.localLabeledFramesFile + '.backup'], stderr = subprocess.PIPE)
+		subprocess.run(['rclone', 'copy', projFileManager.cloudLabeledFramesFile, projFileManager.localAnalysisDir], stderr = subprocess.PIPE)
+
+		if os.path.exists(projFileManager.localLabeledFramesFile):
+			proj_DT = pd.read_csv(projFileManager.localLabeledFramesFile, index_col = 0)
+			proj_DT = proj_DT.append(newAnn_DT, sort=True).drop_duplicates()
+		else:
+			print('Project annotation file does not exist yet. Creating')
+			proj_DT = newAnn_DT
+		proj_DT.to_csv(projFileManager.localLabeledFramesFile, sep = ',', columns = ['Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
+		output = subprocess.run(['rclone', 'copy', projFileManager.localLabeledFramesFile, projFileManager.cloudAnalysisDir], stderr = subprocess.PIPE, encoding = 'utf-8')
+		if output.stderr != '':
+			print(output.stderr)
+else:
+	print('Practice mode enabled. Will not store annotations.')
 subprocess.run(['rm', '-rf', projFileManager.localMasterDir], stderr = subprocess.PIPE)

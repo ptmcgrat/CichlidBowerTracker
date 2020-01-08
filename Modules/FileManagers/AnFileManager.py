@@ -48,21 +48,21 @@ class AnFileManager():
 		self.localBoxedImagesProjDir = self.localBoxedImagesDir + projectID + '/'
 		self._createDirectory(self.localBoxedFishesDir)
 		
-		print(['rclone', 'copy', self.cloudBoxesAnnotationFile, self.localBoxedFishesDir])
-		subprocess.run(['rclone', 'copy', self.cloudBoxesAnnotationFile, self.localBoxedFishesDir])
-		subprocess.run(['rclone', 'copy', self.cloudBoxedImagesDir + projectID + '.tar', self.localBoxedImagesDir])
+		#print(['rclone', 'copy', self.cloudBoxesAnnotationFile, self.localBoxedFishesDir])
+		subprocess.run(['rclone', 'copy', self.cloudBoxesAnnotationFile, self.localBoxedFishesDir], stderr = subprocess.PIPE)
+		subprocess.run(['rclone', 'copy', self.cloudBoxedImagesDir + projectID + '.tar', self.localBoxedImagesDir], stderr = subprocess.PIPE)
 		if os.path.exists(self.localBoxedImagesDir + projectID + '.tar'):
 			output = subprocess.run(['tar', '-xvf', self.localBoxedImagesDir + projectID + '.tar', '-C', self.localBoxedImagesDir], stderr = subprocess.PIPE, encoding = 'utf-8')
-			print(output.stderr)
-			print(['tar', '-xvf', self.localBoxedImagesDir + projectID + '.tar', '-C', self.localBoxedImagesDir])
+			#print(output.stderr)
+			#print(['tar', '-xvf', self.localBoxedImagesDir + projectID + '.tar', '-C', self.localBoxedImagesDir])
 		else:
 			self._createDirectory(self.localBoxedImagesProjDir)
 		#subprocess.run(['rm', '-rf', self.localBoxedImagesDir + projectID + '.tar'], stderr = subprocess.PIPE)
 
 	def backupBoxedProject(self, projectID):
-		subprocess.run(['rclone', 'copy', self.localBoxesAnnotationFile, self.cloudBoxedFishesDir])
+		subprocess.run(['rclone', 'copy', self.localBoxesAnnotationFile, self.cloudBoxedFishesDir], stderr = subprocess.PIPE)
 		subprocess.run(['tar', '-cvf', self.localBoxedImagesDir + projectID + '.tar', '-C', self.localBoxedImagesDir, projectID], stderr = subprocess.PIPE)
-		subprocess.run(['rclone', 'copy', self.localBoxedImagesDir + projectID + '.tar', self.cloudBoxedImagesDir])
+		subprocess.run(['rclone', 'copy', self.localBoxedImagesDir + projectID + '.tar', self.cloudBoxedImagesDir], stderr = subprocess.PIPE)
 		#subprocess.run(['rm', '-rf', self.localMasterDir], stderr = subprocess.PIPE)
 
 

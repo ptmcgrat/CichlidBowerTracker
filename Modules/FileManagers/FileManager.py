@@ -8,7 +8,14 @@ class FileManager():
 		self.system = 'computer' # Initially assume  that we are on a laptop/desktop/server
 
 		self.rcloneRemote = 'cichlidVideo'
-		self.cloudMasterDir = self.rcloneRemote + ':McGrath/Apps/CichlidPiData/'
+
+		output = subprocess.run(['rclone', 'lsf', self.rcloneRemote + ':'], capture_output = True, encoding = 'utf-8')
+		if 'McGrath/' in output.stdout.split():
+			self.cloudMasterDir = self.rcloneRemote + ':McGrath/Apps/CichlidPiData/'
+		elif 'BioSci-McGrath/' in output.stdout.split():
+			self.cloudMasterDir = self.rcloneRemote + ':BioSci-McGrath/Apps/CichlidPiData/'
+		else:
+			raise Exception('Cant find master McGrath directory in rclone remote')
 
 		self.localMasterDir = os.getenv('HOME') + '/' + 'Temp/CichlidAnalyzer/'
 		self.mountedDropboxMasterDir = os.getenv('HOME') + '/Dropbox (GaTech)/McGrath/Apps/CichlidPiData/'
