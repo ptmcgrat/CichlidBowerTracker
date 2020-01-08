@@ -356,7 +356,7 @@ if not args.Practice:
 		# Read in and merge new annotations into annotation csv file
 		if os.path.exists(anFileManager.localBoxesAnnotationFile):
 			old_DT = pd.read_csv(anFileManager.localBoxesAnnotationFile)
-			old_DT = old_DT.append(newAnn_DT, sort=True).drop_duplicates()
+			old_DT = old_DT.append(newAnn_DT, sort=True).drop_duplicates(subset = ['Framefile', 'User', 'Sex', 'Box'])
 		else:
 			print('Annotation database file does not exist yet. Creating')
 			old_DT = newAnn_DT
@@ -380,7 +380,7 @@ if not args.Practice:
 
 		if os.path.exists(projFileManager.localLabeledFramesFile):
 			proj_DT = pd.read_csv(projFileManager.localLabeledFramesFile, index_col = 0)
-			proj_DT = proj_DT.append(newAnn_DT, sort=True).drop_duplicates()
+			proj_DT = proj_DT.append(newAnn_DT, sort=True).drop_duplicates(subset = ['Framefile', 'User', 'Sex', 'Box'])
 		else:
 			print('Project annotation file does not exist yet. Creating')
 			proj_DT = newAnn_DT
