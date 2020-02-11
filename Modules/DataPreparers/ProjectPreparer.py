@@ -39,7 +39,7 @@ class ProjectPreparer():
 		dp_obj = DP(self.projFileManager, self.workers)
 		dp_obj.validateInputData()
 		dp_obj.createSmoothedArray()
-		dp_obj.createRGBVideo()
+		#dp_obj.createRGBVideo()
 		self.createUploadFile(dp_obj.uploads)
 		self.createAnalysisUpdate('Depth', dp_obj)
 
@@ -68,9 +68,10 @@ class ProjectPreparer():
 	def runMLFishDetection(self):
 		pass
 
-	def runFiguresCreation(self):
-		fc_obj =FC(self.projFileManager)
+	def runFigureCreation(self):
+		fc_obj =FP(self.projFileManager)
 		fc_obj.validateInputData()
+		fc_obj.createDepthFigures()
 
 		self.createUploadFile(fc_obj.uploads)
 		self.createAnalysisUpdate('Figures', fc_obj)
@@ -99,7 +100,6 @@ class ProjectPreparer():
 			self.fileManager.uploadData(command[0], command[1], command[2])
 
 		for uFile in uploadFiles:
-			pass
 			subprocess.run(['rm', '-rf', self.fileManager.localUploadDir + uFile])
 
 		self.fileManager.uploadData(self.fileManager.localAnalysisLogDir, self.fileManager.cloudAnalysisLogDir, False)

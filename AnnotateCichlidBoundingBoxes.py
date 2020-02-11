@@ -50,7 +50,7 @@ class Annotation():
 	def retRow(self):
 		if self.coords == ():
 			return 'Must create bounding box before saving an annotation'
-		return [self.other.frames[self.other.frame_index], self.sex, self.coords, self.other.user, self.other.now]
+		return [self.other.projectID, self.other.frames[self.other.frame_index], self.sex, self.coords, self.other.user, self.other.now]
 
 	def reset(self):
 		self.sex = ''
@@ -60,13 +60,14 @@ class Annotation():
 		self.rectangle = None
 
 class ObjectLabeler():
-	def __init__(self, frameDirectory, annotationFile, number):
+	def __init__(self, frameDirectory, annotationFile, number, projectID):
 
 		self.frameDirectory = frameDirectory
 		self.annotationFile = annotationFile
 		self.number = number
+		self.projectID = projectID
 
-		self.frames = [x for x in os.listdir(self.frameDirectory) if '.jpg' in x and '._' not in x] # remove annoying mac OSX files
+		self.frames = sorted([x for x in os.listdir(self.frameDirectory) if '.jpg' in x and '._' not in x]) # remove annoying mac OSX files
 		assert len(self.frames) > 0
 
 		# Keep track of the frame we are on and how many we have annotated
@@ -80,8 +81,8 @@ class ObjectLabeler():
 		if os.path.exists(self.annotationFile):
 			self.dt = pd.read_csv(self.annotationFile, index_col = 0)
 		else:
-			self.dt = pd.DataFrame(columns=['Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
-		self.f_dt = pd.DataFrame(columns=['Framefile','Sex', 'Box','User', 'DateTime'])
+			self.dt = pd.DataFrame(columns=['ProjectID', 'Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
+		self.f_dt = pd.DataFrame(columns=['ProjectID', 'Framefile','Sex', 'Box','User', 'DateTime'])
 
 		# Get user and current time
 		self.user = os.getenv('USER')
@@ -264,14 +265,14 @@ class ObjectLabeler():
 			return
 
 		if len(self.f_dt) == 0:
-			self.f_dt.loc[0] = [self.frames[self.frame_index],'','',self.user, self.now]
+			self.f_dt.loc[0] = [self.projectID,self.frames[self.frame_index],'','',self.user, self.now]
 			self.f_dt['Nfish'] = 0
 		else:
 			self.f_dt['Nfish'] = len(self.f_dt)
 		self.dt = self.dt.append(self.f_dt, sort=True)
 		# Save dataframe (in case user quits)
-		self.dt.to_csv(self.annotationFile, sep = ',', columns = ['Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
-		self.f_dt = pd.DataFrame(columns=['Framefile','Sex', 'Box', 'User', 'DateTime'])
+		self.dt.to_csv(self.annotationFile, sep = ',', columns = ['ProjectID', 'Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
+		self.f_dt = pd.DataFrame(columns=['ProjectID', 'Framefile','Sex', 'Box', 'User', 'DateTime'])
 		self.annotated_frames.append(self.frame_index)
 
 		# Remove old patches
@@ -303,7 +304,7 @@ class ObjectLabeler():
 
 	def _clearFrame(self, event):
 		print('Clearing')
-		self.f_dt = pd.DataFrame(columns=['Framefile','Sex', 'Box', 'User', 'DateTime'])
+		self.f_dt = pd.DataFrame(columns=['ProjectID', 'Framefile','Sex', 'Box', 'User', 'DateTime'])
 		# Remove old patches
 		self.ax_image.patches = []
 		self.annotation_text = ''
@@ -340,7 +341,7 @@ projFileManager.downloadData('ObjectLabeler')
 
 anFileManager = fileManager.retAnFileManager()
 
-obj = ObjectLabeler(projFileManager.localManualLabelFramesDir, projFileManager.localLabeledFramesFile, args.Number)
+obj = ObjectLabeler(projFileManager.localManualLabelFramesDir, projFileManager.localLabeledFramesFile, args.Number, args.ProjectID)
 
 if not args.Practice:
 	# Backup annotations. Redownload to avoid race conditions
@@ -356,15 +357,16 @@ if not args.Practice:
 		# Read in and merge new annotations into annotation csv file
 		if os.path.exists(anFileManager.localBoxesAnnotationFile):
 			old_DT = pd.read_csv(anFileManager.localBoxesAnnotationFile)
-			old_DT = old_DT.append(newAnn_DT, sort=True).drop_duplicates(subset = ['Framefile', 'User', 'Sex', 'Box'])
+			old_DT = old_DT.append(newAnn_DT, sort=True).drop_duplicates(subset = ['ProjectID', 'Framefile', 'User', 'Sex', 'Box'])
 		else:
 			print('Annotation database file does not exist yet. Creating')
 			old_DT = newAnn_DT
 
-		old_DT.to_csv(anFileManager.localBoxesAnnotationFile, sep = ',', columns = ['Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
+		old_DT.to_csv(anFileManager.localBoxesAnnotationFile, sep = ',', columns = ['ProjectID', 'Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
 
 		# Add newly annotated frames to annotation database
 		for row in newAnn_DT.itertuples():
+
 			if not os.path.exists(anFileManager.localBoxedImagesProjDir + row.Framefile):
 				output = subprocess.run(['cp', projFileManager.localManualLabelFramesDir + row.Framefile, anFileManager.localBoxedImagesProjDir], stderr = subprocess.PIPE, encoding = 'utf-8')
 				if output.stderr != '':
@@ -380,11 +382,11 @@ if not args.Practice:
 
 		if os.path.exists(projFileManager.localLabeledFramesFile):
 			proj_DT = pd.read_csv(projFileManager.localLabeledFramesFile, index_col = 0)
-			proj_DT = proj_DT.append(newAnn_DT, sort=True).drop_duplicates(subset = ['Framefile', 'User', 'Sex', 'Box'])
+			proj_DT = proj_DT.append(newAnn_DT, sort=True).drop_duplicates(subset = ['ProjectID', 'Framefile', 'User', 'Sex', 'Box'])
 		else:
 			print('Project annotation file does not exist yet. Creating')
 			proj_DT = newAnn_DT
-		proj_DT.to_csv(projFileManager.localLabeledFramesFile, sep = ',', columns = ['Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
+		proj_DT.to_csv(projFileManager.localLabeledFramesFile, sep = ',', columns = ['ProjectID','Framefile', 'Nfish', 'Sex', 'Box', 'User', 'DateTime'])
 		output = subprocess.run(['rclone', 'copy', projFileManager.localLabeledFramesFile, projFileManager.cloudAnalysisDir], stderr = subprocess.PIPE, encoding = 'utf-8')
 		if output.stderr != '':
 			print(output.stderr)

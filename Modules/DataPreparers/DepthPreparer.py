@@ -1,6 +1,8 @@
 import scipy.signal
+import skvideo.io
 import numpy as np
-import cv2, pdb, os
+import pdb, os
+import matplotlib.pyplot as plt
 from Modules.DataObjects.LogParser import LogParser as LP
 
 class DepthPreparer:
@@ -19,9 +21,14 @@ class DepthPreparer:
 		assert os.path.exists(self.projFileManager.localLogfile)
 		self.lp = LP(self.projFileManager.localLogfile)
 
+		bad_frames = 0
 		for frame in self.lp.frames:
-			assert os.path.exists(self.projFileManager.localMasterDir + frame.npy_file)
-			assert os.path.exists(self.projFileManager.localMasterDir + frame.pic_file)
+
+			if not os.path.exists(self.projFileManager.localMasterDir + frame.npy_file):
+				bad_frames += 1
+			if not os.path.exists(self.projFileManager.localMasterDir + frame.pic_file):
+				bad_frames += 1
+		print(bad_frames)
 		assert os.path.exists(self.projFileManager.localTroubleshootingDir)
 		assert os.path.exists(self.projFileManager.localAnalysisDir)
 
@@ -35,9 +42,9 @@ class DepthPreparer:
 		for i, frame in enumerate(self.lp.frames):                
 			try:
 				data = np.load(self.projFileManager.localMasterDir + frame.npy_file)
-			except ValueError:
-				self._print('Bad frame: ' + str(i) + ', ' + frame.npy_file)
-				rawDepthData[i] = self.rawDepthData[i-1]
+			except FileNotFoundError:
+				print('Bad frame: ' + str(i) + ', ' + frame.npy_file)
+				rawDepthData[i] = rawDepthData[i-1]
 			else:
 				rawDepthData[i] = data
 
@@ -83,15 +90,21 @@ class DepthPreparer:
 		np.save(self.projFileManager.localSmoothDepthFile, smoothDepthData)
 
 	def createRGBVideo(self):
+		pass
 		self.lp = LP(self.projFileManager.localLogfile)
 		for i, frame in enumerate(self.lp.frames): 
-			depthRGB = cv2.imread(self.projFileManager.localMasterDir + frame.pic_file)
+			depthRGB = plt.imread(self.projFileManager.localMasterDir + frame.pic_file)
+			if depthRGB is None:
+				print(self.projFileManager.localMasterDir + frame.pic_file)
+				continue
 			if i==0:
 				#pdb.set_trace()
-				outMovie = cv2.VideoWriter(self.projFileManager.localRGBDepthVideo, cv2.VideoWriter_fourcc(*"mp4v"), 30.0, (depthRGB.shape[1],depthRGB.shape[0]))
-			outMovie.write(depthRGB)
 
-		outMovie.release()
+				outMovie = skvideo.io.FFmpegWriter("outputvideo.mp4")
+				#outMovie = cv2.VideoWriter(self.projFileManager.localRGBDepthVideo, cv2.VideoWriter_fourcc(*"mp4v"), 30.0, (depthRGB.shape[1],depthRGB.shape[0]))
+			outMovie.writeFrame(depthRGB)
+
+		outMovie.close()
 
 
 

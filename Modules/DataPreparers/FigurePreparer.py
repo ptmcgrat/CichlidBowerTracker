@@ -2,7 +2,7 @@ from Modules.DataObjects.LogParser import LogParser as LP
 from Modules.DataObjects.DepthAnalyzer import DepthAnalyzer as DA
 import matplotlib.pyplot as plt
 import pandas as pd
-import datetime
+import datetime, os
 
 class FigurePreparer:
 	# This class takes in directory information and a logfile containing depth information and performs the following:
@@ -18,20 +18,22 @@ class FigurePreparer:
 
 	def validateInputData(self):
 		# Needs to be modified
-		assert os.path.exists(self.projFileManager.localFramesDir)
-		for frame in self.lp.frames:
-			assert os.path.exists(self.projFileManager.localMasterDir + frame.npy_file)
-			assert os.path.exists(self.projFileManager.localMasterDir + frame.pic_file)
-		assert os.path.exists(self.projFileManager.localTroubleshootingDir)
-		assert os.path.exists(self.projFileManager.localAnalysisDir)
+		assert os.path.exists(self.projFileManager.localLogfile)
+		self.lp = LP(self.projFileManager.localLogfile)
 
-		self.uploads = [(self.projFileManager.localTroubleshootingDir, self.projFileManager.cloudTroubleshootingDir), 
-						(self.projFileManager.localAnalysisDir, self.projFileManager.cloudAnalysisDir)]
+		assert os.path.exists(self.projFileManager.localAnalysisDir)
+		assert os.path.exists(self.projFileManager.localSmoothDepthFile)
+		assert os.path.exists(self.projFileManager.localTrayFile)
+		self.da_obj = DA(self.projFileManager)
+
+		assert os.path.exists(self.projFileManager.localFiguresDir)
+
+		self.uploads = [(self.projFileManager.localFiguresDir, self.projFileManager.cloudFiguresDir, '0')]
 
 	def _combineVideoData(self):
 		pass
 		
-	def _createDepthFigures(self, hourlyDelta = 2):
+	def createDepthFigures(self, hourlyDelta = 2):
 
 		# Create summary figure of daily values
 		figDaily = plt.figure(figsize = (11,8.5)) 
@@ -164,7 +166,7 @@ class FigurePreparer:
 		dailyDT = pd.DataFrame(dailyChangeData)
 		hourlyDT = pd.DataFrame(hourlyChangeData)
 
-		writer = pd.ExcelWriter(self.fileManager.localFigureDir + 'DataSummary.xlsx')
+		writer = pd.ExcelWriter(self.projFileManager.localFiguresDir + 'DataSummary.xlsx')
 		totalDT.to_excel(writer,'Total')
 		dailyDT.to_excel(writer,'Daily')
 		hourlyDT.to_excel(writer,'Hourly')
@@ -183,8 +185,8 @@ class FigurePreparer:
 
 
 
-		figDaily.savefig(self.fileManager.localFigureDir + 'DailyDepthSummary.pdf')  
-		figHourly.savefig(self.fileManager.localFigureDir + 'HourlyDepthSummary.pdf')  
+		figDaily.savefig(self.projFileManager.localFiguresDir + 'DailyDepthSummary.pdf')  
+		figHourly.savefig(self.projFileManager.localFiguresDir + 'HourlyDepthSummary.pdf')  
 
 		plt.clf()
 
