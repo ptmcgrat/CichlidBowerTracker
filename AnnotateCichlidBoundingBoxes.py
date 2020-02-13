@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 plt.rcParams['keymap.all_axes'] = '' #a
 plt.rcParams['keymap.back'] = ['left', 'backspace', 'MouseButton.BACK'] #c
 plt.rcParams['keymap.pan'] = '' #p
-
+plt.rcParams['keymap.quit'] = ['ctrl+w', 'cmd+w']
 # Import buttons that we will use to make this interactive
 from matplotlib.widgets import Button
 from matplotlib.widgets import RadioButtons
@@ -131,19 +131,23 @@ class ObjectLabeler():
 		self.bt_boxClear = Button(self.ax_boxClear, r"$\bf{C}$" + 'lear Box')
 
 		# Create click buttons for saving frame annotations or starting over
-		self.ax_frameClear = fig.add_axes([0.85,0.275,0.125,0.04])
+		self.ax_frameClear = fig.add_axes([0.85,0.375,0.125,0.04])
 		self.bt_frameClear = Button(self.ax_frameClear, r"$\bf{R}$" + 'eset Frame')
-		self.ax_frameAdd = fig.add_axes([0.85,0.225,0.125,0.04])
+		self.ax_frameAdd = fig.add_axes([0.85,0.325,0.125,0.04])
 		self.bt_frameAdd = Button(self.ax_frameAdd, r"$\bf{N}$" + 'ext Frame')
-		self.ax_framePrevious = fig.add_axes([0.85,0.175,0.125,0.04])
+		self.ax_framePrevious = fig.add_axes([0.85,0.275,0.125,0.04])
 		self.bt_framePrevious = Button(self.ax_framePrevious, r"$\bf{P}$" + 'revious Frame')
+
+		# Create click button for quitting annotations
+		self.ax_quit = fig.add_axes([0.85,0.175,0.125,0.04])
+		self.bt_quit = Button(self.ax_quit, r"$\bf{Q}$" + 'uit and save')
 
 		# Add text boxes to display info on annotations
 		self.ax_cur_text = fig.add_axes([0.85,0.575,0.125,0.14])
 		self.ax_cur_text.set_axis_off()
 		self.cur_text =self.ax_cur_text.text(0, 1, '', fontsize=8, verticalalignment='top')
 
-		self.ax_all_text = fig.add_axes([0.85,0.375,0.125,0.19])
+		self.ax_all_text = fig.add_axes([0.85,0.425,0.125,0.19])
 		self.ax_all_text.set_axis_off()
 		self.all_text =self.ax_all_text.text(0, 1, '', fontsize=9, verticalalignment='top')
 
@@ -164,6 +168,7 @@ class ObjectLabeler():
 		self.fig.canvas.mpl_disconnect(self.bt_frameAdd.cids[2])
 		self.fig.canvas.mpl_disconnect(self.bt_frameClear.cids[2])
 		self.fig.canvas.mpl_disconnect(self.bt_framePrevious.cids[2])
+		self.fig.canvas.mpl_disconnect(self.bt_quit.cids[2])
 
 		# Connect buttons to specific functions		
 		self.bt_boxAdd.on_clicked(self._addBoundingBox)
@@ -171,6 +176,7 @@ class ObjectLabeler():
 		self.bt_frameClear.on_clicked(self._clearFrame)
 		self.bt_framePrevious.on_clicked(self._previousFrame)
 		self.bt_frameAdd.on_clicked(self._nextFrame)
+		self.bt_quit.on_clicked(self._quit)
 
 		# Show figure
 		plt.show()
@@ -203,6 +209,8 @@ class ObjectLabeler():
 			self._clearFrame(event)
 		elif event.key == 'p':
 			self._previousFrame(event)
+		elif event.key == 'q':
+			self._quit(event)
 		else:
 			pass
 
@@ -230,6 +238,7 @@ class ObjectLabeler():
 			return
 		else:
 			self.f_dt.loc[len(self.f_dt)] = outrow
+			self.f_dt.drop_duplicates(subset = ['ProjectID', 'Framefile', 'User', 'Sex', 'Box'])
 
 		self.annotation_text += self.annotation.sex + ':' + str(self.annotation.coords) + '\n'
 		# Add annotation to the temporary data frame
@@ -327,6 +336,9 @@ class ObjectLabeler():
 		self.image_obj.set_array(img)
 		self.ax_image.set_title('Frame ' + str(self.frame_index) + ': ' + self.frames[self.frame_index])
 		self.fig.canvas.draw()
+
+	def _quit(self, event):
+		plt.close(self.fig)
 
 parser = argparse.ArgumentParser(description='This command runs HMM analysis on a single row of data.')
 parser.add_argument('ProjectID', type = str, help = 'ProjectID to analyze')
