@@ -15,7 +15,7 @@ from matplotlib.widgets import RectangleSelector
 # Import some patches that we will use to display the annotations
 from matplotlib.patches import Rectangle
 
-import pdb, datetime, os, subprocess, argparse
+import pdb, datetime, os, subprocess, argparse, random
 import pandas as pd
 
 class Annotation():
@@ -67,7 +67,8 @@ class ObjectLabeler():
 		self.number = number
 		self.projectID = projectID
 
-		self.frames = random.Random(4).shuffle(sorted([x for x in os.listdir(self.frameDirectory) if '.jpg' in x and '._' not in x]))
+		self.frames = sorted([x for x in os.listdir(self.frameDirectory) if '.jpg' in x and '._' not in x])
+		random.Random(4).shuffle(self.frames)
 		#self.frames = sorted([x for x in os.listdir(self.frameDirectory) if '.jpg' in x and '._' not in x]) # remove annoying mac OSX files
 		assert len(self.frames) > 0
 
