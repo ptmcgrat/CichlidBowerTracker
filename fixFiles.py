@@ -1,4 +1,4 @@
-import os, subprocess,pdb
+import os, subprocess,pdb, sys
 from Modules.FileManagers.FileManager import FileManager as FM
 from Modules.DataObjects.LogParser import LogParser as LP
 
@@ -12,24 +12,22 @@ def fixLogFile(projectID, master_directory):
 			print('Cant read logfile for: ' + projectID)
 			return False
 
-		with open(master_directory + projectID + '/Logfile.txt') as f:
-			#print('Fixing: ' + projectID)
-			for line in f:
-				if 'PiCameraStopped' in line:
-					if ',,' not in line:
-						print(projectID)
-						badProject = True
+		try:
+			logObj.movies[-1].endTime
+		except IndexError:
+			print(projectID + ' has no movies')
+			return False
+		if logObj.movies[-1].endTime == '':
 
-	if badProject:
-		subprocess.run(['mv', master_directory + projectID + '/Logfile.txt', master_directory + projectID + '/Logfile.bu.txt'])
-		with open(master_directory + projectID + '/Logfile.bu.txt') as f, open(master_directory + projectID + '/Logfile.txt', 'w') as g:
-			#print('Fixing: ' + projectID)
-			for line in f:
-				if 'PiCameraStopped' in line and ',,' not in line:
-					print(line.rstrip().replace(',', ',,'), file = g)
-				else:
-					print(line.rstrip(), file = g)
-	return badProject
+			print(projectID)
+			out = 'PiCameraStopped: Time: ' + str(logObj.frames[-1].time) + ',, File: ' + logObj.movies[-1].h264_file
+
+			subprocess.run(['cp', master_directory + projectID + '/Logfile.txt', master_directory + projectID + '/Logfile.beforeAddingPiCameraStopped.txt'])
+
+			with open(master_directory + projectID + '/Logfile.txt', 'a') as f:
+				print(out, file = f)
+			return True
+	return False
 
 def addLastRGBPic(projectID, master_directory):
 	sdirs = os.listdir(master_directory + projectID)

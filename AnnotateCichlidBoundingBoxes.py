@@ -67,7 +67,8 @@ class ObjectLabeler():
 		self.number = number
 		self.projectID = projectID
 
-		self.frames = sorted([x for x in os.listdir(self.frameDirectory) if '.jpg' in x and '._' not in x]) # remove annoying mac OSX files
+		self.frames = random.Random(4).shuffle(sorted([x for x in os.listdir(self.frameDirectory) if '.jpg' in x and '._' not in x]))
+		#self.frames = sorted([x for x in os.listdir(self.frameDirectory) if '.jpg' in x and '._' not in x]) # remove annoying mac OSX files
 		assert len(self.frames) > 0
 
 		# Keep track of the frame we are on and how many we have annotated
