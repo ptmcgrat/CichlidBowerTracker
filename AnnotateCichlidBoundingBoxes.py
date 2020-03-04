@@ -1,5 +1,6 @@
 from Modules.FileManagers.FileManager import FileManager as FM
-
+from PIL import Image
+from PIL import ImageEnhance
 
 import matplotlib.pyplot as plt
 # These disable some of the default key strokes that we will use
@@ -11,9 +12,10 @@ plt.rcParams['keymap.quit'] = ['ctrl+w', 'cmd+w']
 from matplotlib.widgets import Button
 from matplotlib.widgets import RadioButtons
 from matplotlib.widgets import RectangleSelector
-
+from matplotlib.widgets import Slider
 # Import some patches that we will use to display the annotations
 from matplotlib.patches import Rectangle
+from matplotlib.colors import Normalize
 
 import pdb, datetime, os, subprocess, argparse, random
 import pandas as pd
@@ -107,7 +109,17 @@ class ObjectLabeler():
 		self.ax_image = fig.add_axes([0.05,0.2,.8,0.75])
 		while len(self.dt[(self.dt.Framefile == self.frames[self.frame_index]) & (self.dt.User == self.user)]) != 0:
 			self.frame_index += 1
-		img = plt.imread(self.frameDirectory + self.frames[self.frame_index])
+		# Create slider for saturation
+		self.ax_saturation = fig.add_axes([0.1, 0.08, 0.2, 0.03])
+		self.slid_saturation = Slider(self.ax_saturation, 'Saturation', 0, 10, valinit=1, valstep=.1)
+
+		# Plot image
+		self.img = Image.open(self.frameDirectory + self.frames[self.frame_index])
+		#img = plt.imread(self.frameDirectory + self.frames[self.frame_index])
+		#print(img.shape)
+		self.converter = ImageEnhance.Color(self.img)
+		img = self.converter.enhance(self.slid_saturation.val)
+
 		self.image_obj = self.ax_image.imshow(img)
 		self.ax_image.set_title('Frame ' + str(self.frame_index) + ': ' + self.frames[self.frame_index])
 
@@ -120,6 +132,7 @@ class ObjectLabeler():
 									   spancoords='pixels',
 									   interactive=True)
 		self.RS.set_active(True)
+
 
 		# Create radio buttons
 		self.ax_radio = fig.add_axes([0.85,0.85,0.125,0.1])
@@ -153,7 +166,7 @@ class ObjectLabeler():
 		self.ax_all_text.set_axis_off()
 		self.all_text =self.ax_all_text.text(0, 1, '', fontsize=9, verticalalignment='top')
 
-		self.ax_error_text = fig.add_axes([0.1,0.05,.7,0.1])
+		self.ax_error_text = fig.add_axes([0.3,0.05,.6,0.1])
 		self.ax_error_text.set_axis_off()
 		self.error_text =self.ax_error_text.text(0, 1, '', fontsize=14, color = 'red', verticalalignment='top')
 
@@ -179,6 +192,7 @@ class ObjectLabeler():
 		self.bt_framePrevious.on_clicked(self._previousFrame)
 		self.bt_frameAdd.on_clicked(self._nextFrame)
 		self.bt_quit.on_clicked(self._quit)
+		self.slid_saturation.on_changed(self._updateFrame)
 
 		# Show figure
 		plt.show()
@@ -307,11 +321,21 @@ class ObjectLabeler():
 		self.all_text.set_text('')
 
 		# Load new image and save it as the background
-		img = plt.imread(self.frameDirectory + self.frames[self.frame_index])
+		self.img = Image.open(self.frameDirectory + self.frames[self.frame_index])
+		#img = plt.imread(self.frameDirectory + self.frames[self.frame_index])
+		#print(img.shape)
+		self.converter = ImageEnhance.Color(self.img)
+		img = self.converter.enhance(self.slid_saturation.val)
+
 		self.image_obj.set_array(img)
 		self.ax_image.set_title('Frame ' + str(self.frame_index) + ': ' + self.frames[self.frame_index])
 		self.fig.canvas.draw()
 		#self.background = self.fig.canvas.copy_from_bbox(self.fig.bbox)
+
+	def _updateFrame(self, event):
+		img = self.converter.enhance(self.slid_saturation.val)
+		self.image_obj.set_array(img)
+		self.fig.canvas.draw()
 
 	def _clearFrame(self, event):
 		print('Clearing')
@@ -334,7 +358,11 @@ class ObjectLabeler():
 		self.dt = self.dt[self.dt.Framefile != self.frames[self.frame_index]]
 		self._clearFrame(event)
 		# Load new image and save it as the background
-		img = plt.imread(self.frameDirectory + self.frames[self.frame_index])
+		self.img = Image.open(self.frameDirectory + self.frames[self.frame_index])
+		self.converter = ImageEnhance.Color(self.img)
+		img = self.converter.enhance(self.slid_saturation.val)
+
+		#img = plt.imread(self.frameDirectory + self.frames[self.frame_index])
 		self.image_obj.set_array(img)
 		self.ax_image.set_title('Frame ' + str(self.frame_index) + ': ' + self.frames[self.frame_index])
 		self.fig.canvas.draw()
@@ -351,7 +379,7 @@ args = parser.parse_args()
 
 fileManager = FM()
 projFileManager = fileManager.retProjFileManager(args.ProjectID)
-projFileManager.downloadData('ObjectLabeler')
+#projFileManager.downloadData('ObjectLabeler')
 
 anFileManager = fileManager.retAnFileManager()
 
@@ -406,4 +434,4 @@ if not args.Practice:
 			print(output.stderr)
 else:
 	print('Practice mode enabled. Will not store annotations.')
-subprocess.run(['rm', '-rf', projFileManager.localMasterDir], stderr = subprocess.PIPE)
+#subprocess.run(['rm', '-rf', projFileManager.localMasterDir], stderr = subprocess.PIPE)
