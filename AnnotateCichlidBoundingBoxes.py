@@ -379,7 +379,7 @@ args = parser.parse_args()
 
 fileManager = FM()
 projFileManager = fileManager.retProjFileManager(args.ProjectID)
-#projFileManager.downloadData('ObjectLabeler')
+projFileManager.downloadData('ObjectLabeler')
 
 anFileManager = fileManager.retAnFileManager()
 
@@ -434,4 +434,4 @@ if not args.Practice:
 			print(output.stderr)
 else:
 	print('Practice mode enabled. Will not store annotations.')
-#subprocess.run(['rm', '-rf', projFileManager.localMasterDir], stderr = subprocess.PIPE)
+subprocess.run(['rm', '-rf', projFileManager.localMasterDir], stderr = subprocess.PIPE)
